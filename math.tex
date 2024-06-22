@@ -1,0 +1,97 @@
+\documentclass{article}
+\usepackage{amsmath} % for mathematical symbols and environments
+\usepackage{amssymb} % for additional mathematical symbols like \mathbb
+
+\title{Stochastic Processes and Option Pricing}
+\author{Dylan Tirandaz}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+In this document, we explore the application of stochastic processes, specifically Geometric Brownian Motion (GBM), in option pricing.
+
+\section{Theory of Geometric Brownian Motion}
+
+Geometric Brownian Motion (GBM) is defined by the stochastic differential equation:
+\begin{equation}
+dS_t = \mu S_t dt + \sigma S_t dW_t
+\end{equation}
+where:
+\begin{itemize}
+    \item \( S_t \) is the asset price at time \( t \),
+    \item \( \mu \) is the drift rate (expected return of the asset),
+    \item \( \sigma \) is the volatility (standard deviation of the asset's returns),
+    \item \( W_t \) is a Wiener process (standard Brownian motion).
+\end{itemize}
+
+The solution to this SDE is:
+\begin{equation}
+S_t = S_0 \exp \left( \left( \mu - \frac{\sigma^2}{2} \right)t + \sigma W_t \right)
+\end{equation}
+
+\section{Option Pricing using GBM}
+
+To price European options under GBM, we simulate the asset price using Monte Carlo methods. The price of a European Call option can be estimated as:
+\begin{equation}
+C(S_0, K, r, \sigma, T) = e^{-rT} \mathbb{E} \left[ \max(S_T - K, 0) \right]
+\end{equation}
+where \( S_0 \) is the initial stock price, \( K \) is the strike price, \( r \) is the risk-free interest rate, \( \sigma \) is the volatility, \( T \) is the time to expiration, and \( S_T \) is the asset price at expiration.
+
+\section{Implementation in C++}
+
+The following C++ code implements the simulation of GBM and calculates the price of a European Call option:
+
+\begin{verbatim}
+// Function to simulate Geometric Brownian Motion (GBM)
+double geometric_brownian_motion(double S0, double drift, double volatility, double T, double dt) {
+    double S = S0;
+    for (double t = 0; t < T; t += dt) {
+        double W = random_normal(0.0, 1.0);
+        S *= exp((drift - 0.5 * volatility * volatility) * dt + volatility * sqrt(dt) * W);
+    }
+    return S;
+}
+
+// Function to calculate European Call option price using GBM
+double european_call_option_price(double S0, double K, double r, double volatility, double T) {
+    // Parameters
+    int num_simulations = 100000; // Number of Monte Carlo simulations
+    double dt = T; // Time steps (assuming annualized)
+    double discounted_expected_payoff = 0.0;
+
+    // Simulate asset prices and calculate option payoffs
+    for (int i = 0; i < num_simulations; ++i) {
+        double S_T = geometric_brownian_motion(S0, r, volatility, T, dt);
+        double payoff = max(S_T - K, 0.0); // Payoff for European Call option
+        discounted_expected_payoff += payoff / num_simulations;
+    }
+
+    // Discounted expected payoff to present value
+    double option_price = exp(-r * T) * discounted_expected_payoff;
+
+    return option_price;
+}\end{verbatim}
+
+\section{Results}
+
+The C++ program produces the following results for the European Call option:
+
+\begin{itemize}
+    \item Initial stock price \( S_0 = 100 \)
+    \item Strike price \( K = 100 \)
+    \item Risk-free interest rate \( r = 0.05 \)
+    \item Volatility \( \sigma = 0.2 \)
+    \item Time to expiration \( T = 1 \) year
+\end{itemize}
+
+The European Call option price is \( C(S_0, K, r, \sigma, T) = \) [insert calculated option price here].
+
+\section{Conclusion}
+
+This document demonstrates the use of Geometric Brownian Motion in simulating asset prices and pricing European options.
+
+\end{document}
