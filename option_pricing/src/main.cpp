@@ -4,35 +4,78 @@
 #include "monte_carlo.h"
 #include <iostream>
 #include <iomanip>
+#include <stdexcept>
 
 int main() {
-    // Option parameters
-    double S0 = 100.0;          // Initial stock price
-    double K = 100.0;           // Strike price
-    double r = 0.05;            // Risk-free interest rate
-    double volatility = 0.2;    // Volatility
-    double T = 1.0;             // Time to expiration (in years)
+    try {
+        double S0 = 100.0;          
+        double K = 100.0;           
+        double r = 0.05;            
+        double volatility = 0.2;    
+        double T = 1.0;             
 
-    // Number of Monte Carlo simulations
-    int num_simulations = 100000;
+        int num_simulations = 100000;
+        int num_time_steps = 252;  
 
-    // Create European Call option instance
-    EuropeanOption euro_call(S0, K, r, volatility, T, 'C');
+        std::cout << "=== Option Pricing using Monte Carlo Simulation ===" << std::endl;
+        std::cout << "Parameters:" << std::endl;
+        std::cout << "  Initial Stock Price (S0): $" << S0 << std::endl;
+        std::cout << "  Strike Price (K): $" << K << std::endl;
+        std::cout << "  Risk-free Rate (r): " << (r * 100) << "%" << std::endl;
+        std::cout << "  Volatility (σ): " << (volatility * 100) << "%" << std::endl;
+        std::cout << "  Time to Expiration (T): " << T << " year(s)" << std::endl;
+        std::cout << "  Monte Carlo Simulations: " << num_simulations << std::endl;
+        std::cout << "  Time Steps: " << num_time_steps << std::endl;
+        std::cout << std::endl;
 
-    // Create Asian option instance
-    AsianOption asian_option(S0, K, r, volatility, T);
+        EuropeanOption euro_call(S0, K, r, volatility, T, 'C');
+        EuropeanOption euro_put(S0, K, r, volatility, T, 'P');
+        AsianOption asian_call(S0, K, r, volatility, T, 'C');
+        AsianOption asian_put(S0, K, r, volatility, T, 'P');
 
-    // Monte Carlo simulation object
-    MonteCarlo mc(num_simulations);
+        MonteCarlo mc(num_simulations, num_time_steps);
+        mc.setSeed(42);  
 
-    // Calculate option prices
-    double euro_call_price = mc.simulate(euro_call);
-    double asian_option_price = mc.simulate(asian_option);
+        std::cout << "Calculating prices..." << std::endl;
+        
+        double euro_call_mc = euro_call.price();
+        double euro_put_mc = euro_put.price();
+        double euro_call_bs = euro_call.blackScholesPrice();
+        double euro_put_bs = euro_put.blackScholesPrice();
+        
+        double asian_call_price = asian_call.price();
+        double asian_put_price = asian_put.price();
 
-    // Output results
-    std::cout << std::fixed << std::setprecision(4);
-    std::cout << "European Call Option Price: " << euro_call_price << std::endl;
-    std::cout << "Asian Option Price: " << asian_option_price << std::endl;
+        std::cout << std::fixed << std::setprecision(4);
+        std::cout << "\n=== EUROPEAN OPTIONS ===" << std::endl;
+        std::cout << "European Call Option:" << std::endl;
+        std::cout << "  Monte Carlo Price: $" << euro_call_mc << std::endl;
+        std::cout << "  Black-Scholes Price: $" << euro_call_bs << std::endl;
+        std::cout << "  Difference: $" << std::abs(euro_call_mc - euro_call_bs) << std::endl;
+        
+        std::cout << "\nEuropean Put Option:" << std::endl;
+        std::cout << "  Monte Carlo Price: $" << euro_put_mc << std::endl;
+        std::cout << "  Black-Scholes Price: $" << euro_put_bs << std::endl;
+        std::cout << "  Difference: $" << std::abs(euro_put_mc - euro_put_bs) << std::endl;
+
+        std::cout << "\n=== ASIAN OPTIONS ===" << std::endl;
+        std::cout << "Asian Call Option Price: $" << asian_call_price << std::endl;
+        std::cout << "Asian Put Option Price: $" << asian_put_price << std::endl;
+
+        double put_call_parity_lhs = euro_call_bs + K * std::exp(-r * T);
+        double put_call_parity_rhs = euro_put_bs + S0;
+        std::cout << "\n=== PUT-CALL PARITY VERIFICATION ===" << std::endl;
+        std::cout << "C + K*e^(-rT) = " << put_call_parity_lhs << std::endl;
+        std::cout << "P + S0 = " << put_call_parity_rhs << std::endl;
+        std::cout << "Difference: " << std::abs(put_call_parity_lhs - put_call_parity_rhs) << std::endl;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return 1;
+    } catch (...) {
+        std::cerr << "Unknown error occurred" << std::endl;
+        return 1;
+    }
 
     return 0;
 }
